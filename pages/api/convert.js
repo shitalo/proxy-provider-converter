@@ -1,6 +1,25 @@
 const YAML = require("yaml");
 const axios = require("axios");
 
+async function get_proxies(url) {
+  let proxies =  undefined;
+  try {
+    const result = await axios({
+      url,
+      headers: {
+        "User-Agent":
+            "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
+      },
+    });
+    // configFile = result.data
+    proxies =YAML.parse(result.data).proxies
+  } catch (error) {
+
+  }
+  return proxies;
+}
+
+
 module.exports = async (req, res) => {
   const url = req.query.url;
   const target = req.query.target;
@@ -36,7 +55,31 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (config.proxies === undefined) {
+  config.proxies = config.proxies || [];
+
+  try {
+    let providers = config['proxy-providers']
+    for (const val in providers) {
+      // console.log(providers[val]['url'])
+      let url = String(providers[val]['url'])
+      let proxies = await get_proxies(url)
+      if (proxies !== undefined) {
+        config.proxies.push(...proxies)
+      }
+    }
+  } catch (error) {
+    console.log('获取proxy-providers失败')
+  }
+
+  // 剔除不含 type、server、port 内容的节点（无效节点）
+  config.proxies = config.proxies.filter(item => item.type && item.server && item.port);
+  // 节点去重（根据 type、server、port）
+  config.proxies = config.proxies.filter((item, index, self) => {
+    const key = `${item.type || ''}-${item.server || ''}-${item.port || ''}`;
+    return self.findIndex(i => `${i.type || ''}-${i.server || ''}-${i.port || ''}` === key) === index;
+  });
+
+  if (config.proxies === undefined || (Array.isArray(config.proxies) && config.proxies.length === 0)) {
     res.status(400).send("No proxies in this config");
     return;
   }
