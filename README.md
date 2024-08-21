@@ -2,6 +2,10 @@
 
 一个可以将 Clash 订阅转换成 Proxy Provider 和 External Group(Surge) 的工具
 
+- 增加转换 proxy-providers
+- 删除非正常节点
+- 节点去重
+
 [https://proxy-provider-converter.vercel.app](https://proxy-provider-converter.vercel.app)
 
 ### 什么是 Proxy Provider 和 External Group？

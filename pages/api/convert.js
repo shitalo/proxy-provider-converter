@@ -1,22 +1,22 @@
 const YAML = require("yaml");
 const axios = require("axios");
 
-async function get_proxies(url) {
-  let proxies =  undefined;
+
+async function fetchData(url) {
+  let res = null;
   try {
     const result = await axios({
       url,
       headers: {
         "User-Agent":
             "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
-      },
+      }
     });
-    // configFile = result.data
-    proxies =YAML.parse(result.data).proxies
+    res = result.data;
   } catch (error) {
-
+    console.log(`Fetch url failed`);
   }
-  return proxies;
+  return res;
 }
 
 
@@ -29,8 +29,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  console.log(`Fetching url: ${url}`);
-  let configFile = null;
+  console.log(`Fetching subscribe url: ${url}`);
+/*  let configFile = null;
   try {
     const result = await axios({
       url,
@@ -43,49 +43,70 @@ module.exports = async (req, res) => {
   } catch (error) {
     res.status(400).send(`Unable to get url, error: ${error}`);
     return;
+  }*/
+
+  // 1、http get
+  let urlResData = await fetchData(url);
+  if (!urlResData) {
+    res.status(400).send(`Fetching subscribe url failed`);
+    return
   }
 
-  console.log(`Parsing YAML`);
-  let config = null;
+  // 从proxieos和provider中提取代理
+  // 2、proxies
+  console.log(`Extract: proxies`);
+  let proxiesArr = []
   try {
-    config = YAML.parse(configFile);
-    console.log(`👌 Parsed YAML`);
+    const proxies = YAML.parse(urlResData)['proxies']
+    if (proxies && Array.isArray(proxies)) {
+      proxiesArr.push(...proxies)
+    } else {
+      console.log('The proxies key does not exist or the value is not an array');
+    }
   } catch (error) {
-    res.status(500).send(`Unable parse config, error: ${error}`);
-    return;
+    // res.status(500).send(`Unable parse config, error: ${error}`);
+    // return;
   }
 
-  config.proxies = config.proxies || [];
-
+  // 3、proxy-providers
+  console.log(`Extract: proxy-providers`);
   try {
-    let providers = config['proxy-providers']
+    let providers = YAML.parse(urlResData)['proxy-providers']
     for (const val in providers) {
-      // console.log(providers[val]['url'])
       let url = String(providers[val]['url'])
-      let proxies = await get_proxies(url)
-      if (proxies !== undefined) {
-        config.proxies.push(...proxies)
+      console.log(`Fetching providers url: ${url}`);
+      try {
+        let proxies = YAML.parse(await fetchData(url))['proxies']
+        if (proxies && Array.isArray(proxies)) {
+          proxiesArr.push(...proxies)
+        } else {
+          console.log('The proxies in proxy-providers key does not exist or the value is not an array');
+        }
+      } catch (error) {
+        console.log(`Parse proxy-providers failed. provider url: ${url}`)
       }
     }
   } catch (error) {
-    console.log('获取proxy-providers失败')
+    console.log('Failed to obtain proxy-providers');
   }
 
   // 剔除不含 type、server、port 内容的节点（无效节点）
-  config.proxies = config.proxies.filter(item => item.type && item.server && item.port);
+  proxiesArr = proxiesArr.filter(item => item.type && item.server && item.port);
   // 节点去重（根据 type、server、port）
-  config.proxies = config.proxies.filter((item, index, self) => {
+  proxiesArr = proxiesArr.filter((item, index, self) => {
     const key = `${item.type || ''}-${item.server || ''}-${item.port || ''}`;
     return self.findIndex(i => `${i.type || ''}-${i.server || ''}-${i.port || ''}` === key) === index;
   });
 
-  if (config.proxies === undefined || (Array.isArray(config.proxies) && config.proxies.length === 0)) {
+  // 没有任何节点
+  if (!proxiesArr || (Array.isArray(proxiesArr) && proxiesArr.length === 0)) {
     res.status(400).send("No proxies in this config");
     return;
   }
+  
 
   if (target === "surge") {
-    const supportedProxies = config.proxies.filter((proxy) =>
+    const supportedProxies = proxiesArr.filter((proxy) =>
       ["ss", "vmess", "trojan"].includes(proxy.type)
     );
     const surgeProxies = supportedProxies.map((proxy) => {
@@ -158,7 +179,7 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.status(200).send(proxies.join("\n"));
   } else {
-    const response = YAML.stringify({ proxies: config.proxies });
+    const response = YAML.stringify({ proxies: proxiesArr });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.status(200).send(response);
   }
