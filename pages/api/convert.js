@@ -538,6 +538,9 @@ module.exports = async (req, res) => {
 
   // 剔除不含 type、server、port 内容的节点（无效节点）
   proxiesArr = proxiesArr.filter(item => item.type && item.server && item.port);
+
+  // 节点有限性筛选
+  proxiesArr = proxiesArr.filter(item => item.Cipher !== "ss");
   // 节点去重（根据 type、server、port）
   proxiesArr = proxiesArr.filter((item, index, self) => {
     const key = `${item.type || ''}-${item.server || ''}-${item.port || ''}`;
