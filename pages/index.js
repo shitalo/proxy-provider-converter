@@ -59,6 +59,11 @@ proxy-providers:
 ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
 `;
 
+  const subConfig = `# 订阅地址
+
+${convertedUrl}
+`;
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <Head>
@@ -114,6 +119,7 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
                 onChange={(e) => setTarget(e.target.value)}
               >
                 <option value="clash">转换到 Clash</option>
+                <option value="sub">转换到 Subscription</option>
                 <option value="surge">转换到 Surge</option>
               </select>
               <SelectorIcon className="absolute h-6 top-3.5 right-3 text-gray-400" />
@@ -135,15 +141,20 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
         {url && (
           <div className="w-full p-4 mt-4 text-gray-100 bg-gray-900 rounded-lg hidden md:block">
             {/* prettier-ignore */}
-            {target !== "surge" && (
+
+            {target === "surge" && <pre>{surgeConfig}</pre>}
+
+            {target === "sub" && <pre>{subConfig}</pre>}
+
+            {target !== "surge" && target !== "sub" &&(
               <pre className="whitespace-pre-wrap">{clashConfig}</pre>
             )}
 
-            {target === "surge" && <pre>{surgeConfig}</pre>}
             {/* prettier-ignore */}
 
             <CopyToClipboard
-              text={target === "surge" ? surgeConfig : clashConfig}
+              // text={target === "surge" ? surgeConfig : clashConfig}
+              text={target === "surge" ? surgeConfig : (target === "clash" ? clashConfig : (target === "sub" ? subConfig : ""))}
               onCopy={() => copiedToast()}
             >
               <div className="flex items-center text-sm mt-4 text-gray-400 cursor-pointer hover:text-gray-300 transition duration-200 select-none">
@@ -178,11 +189,11 @@ ${urlHost || "egroup"} = select, policy-path=${convertedUrl}
             <li>
               1. 打开{" "}
               <a
-                href="https://github.com/qier222/proxy-provider-converter"
+                href="https://github.com/shitalo/proxy-provider-converter"
                 target="_blank"
                 className="text-yellow-600 transition hover:text-yellow-500"
               >
-                https://github.com/qier222/proxy-provider-converter
+                https://github.com/shitalo/proxy-provider-converter
               </a>
             </li>
             <li>2. 点击右上角的 Fork 按钮</li>

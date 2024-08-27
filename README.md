@@ -2,9 +2,10 @@
 
 一个可以将 Clash 订阅转换成 Proxy Provider 和 External Group(Surge) 的工具
 
-- 增加转换 proxy-providers
+- 可以转换 clash 配置文件中的 **proxy-providers**
 - 删除非正常节点
 - 节点去重
+- 转化为 Base64 类型的节点订阅（感谢：[juerson/config_to_sub](https://github.com/juerson/config_to_sub)）
 
 [https://proxy-provider-converter.vercel.app](https://proxy-provider-converter.vercel.app)
 
