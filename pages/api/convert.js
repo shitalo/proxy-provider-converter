@@ -2,22 +2,23 @@ const YAML = require("yaml");
 const axios = require("axios");
 
 
+
 async function fetchData(url) {
-  let res = null;
   try {
     const result = await axios({
       url,
       headers: {
-        "User-Agent":
-            "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
-      }
+        "User-Agent": "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
+      },
+      timeout: 20 * 1000
     });
-    res = result.data;
+    return result.data;
   } catch (error) {
-    console.log(`Fetch url failed`);
+    console.log(`Fetch url failed: ${url}`);
+    return null; // 返回 null 或者一个空字符串，以避免在后续处理中出错
   }
-  return res;
 }
+
 
 
 module.exports = async (req, res) => {
@@ -71,24 +72,47 @@ module.exports = async (req, res) => {
   // 3、proxy-providers
   console.log(`Extract: proxy-providers`);
   try {
-    let providers = YAML.parse(urlResData)['proxy-providers']
+    let providers = YAML.parse(urlResData)['proxy-providers'];
+    let fetchPromises = [];
+
     for (const val in providers) {
-      let url = String(providers[val]['url'])
+      let url = String(providers[val]['url']);
       console.log(`Fetching providers url: ${url}`);
-      try {
-        let proxies = YAML.parse(await fetchData(url))['proxies']
-        if (proxies && Array.isArray(proxies)) {
-          proxiesArr.push(...proxies)
+      fetchPromises.push(fetchData(url).then(data => {
+        // console.log(`${val}开始请求：${url}`)
+        if (data) {
+          // console.log(`${val}请求结束：${url}`)
+          try {
+            let proxies = YAML.parse(data)['proxies'];
+            if (proxies && Array.isArray(proxies)) {
+              return proxies;
+            } else {
+              console.log('The proxies in proxy-providers key does not exist or the value is not an array');
+              return [];
+            }
+          } catch (error) {
+            console.log(`Parse proxy-providers failed. provider url: ${url}`);
+            return [];
+          }
         } else {
-          console.log('The proxies in proxy-providers key does not exist or the value is not an array');
+          return [];
         }
-      } catch (error) {
-        console.log(`Parse proxy-providers failed. provider url: ${url}`)
-      }
+      }));
     }
+
+    // 并行处理所有的 fetch 请求
+    let results = await Promise.all(fetchPromises);
+
+    // 将所有结果合并到 proxiesArr 中
+    results.forEach(proxies => {
+      proxiesArr.push(...proxies);
+    });
+
   } catch (error) {
     console.log('Failed to obtain proxy-providers');
   }
+
+
 
   // 剔除不含 type、server、port 内容的节点（无效节点）
   proxiesArr = proxiesArr.filter(item => item.type && item.server && item.port);
