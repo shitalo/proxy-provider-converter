@@ -1,7 +1,9 @@
 const YAML = require("yaml");
 const axios = require("axios");
 const Base64 = require("js-base64")
+import { ProxyParser } from '../src/ProxyParsers';
 
+import {ConvertsV2Ray} from "../src/MihomoParse";
 
 
 function parse_hysteria(outbounds_n) {
@@ -432,12 +434,35 @@ async function fetchData(url) {
       headers: {
         "User-Agent": "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
       },
-      timeout: 20 * 1000
+      timeout: 30 * 1000
     });
     return result.data;
   } catch (error) {
     console.log(`Fetch url failed: ${url}`);
     return null; // 返回 null 或者一个空字符串，以避免在后续处理中出错
+  }
+}
+
+/*
+* 测试内容是否是Base64
+* */
+function isBase64(str) {
+  // 定义 base64 字符集的正则表达式
+  const base64Pattern = /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/;
+
+  // 检查字符串是否符合 base64 的正则表达式
+  if (!base64Pattern.test(str)) {
+    return false;
+  }
+
+  try {
+    // 尝试解码字符串
+    const decoded = Base64.decode(str);
+
+    // 返回尝试解码是否成功，而不关心解码后的内容
+    return true;
+  } catch (error) {
+    return false;
   }
 }
 
@@ -475,10 +500,33 @@ module.exports = async (req, res) => {
     return
   }
 
+  let proxiesArr = []
+
+/*  if (isBase64(urlResData)) {
+    const urls = Base64.decode(urlResData).split('\n').filter(url => url.trim() !== '');
+    const parsedItems = [];
+    for (const url of urls) {
+      const result = await ProxyParser.coverToClashProxies(url);
+      if (Array.isArray(result)) {
+        for (const subUrl of result) {
+          const subResult = await ProxyParser.coverToClashProxies(subUrl);
+          if (subResult) {
+            parsedItems.push(subResult);
+          }
+        }
+      } else if (result) {
+        parsedItems.push(result);
+      }
+    }
+    proxiesArr = parsedItems
+  }*/
+
+
+
   // 从proxieos和provider中提取代理
   // 2、proxies
   console.log(`Extract: proxies`);
-  let proxiesArr = []
+
   try {
     const proxies = YAML.parse(urlResData)['proxies']
     if (proxies && Array.isArray(proxies)) {
@@ -489,6 +537,11 @@ module.exports = async (req, res) => {
   } catch (error) {
     // res.status(500).send(`Unable parse config, error: ${error}`);
     // return;
+    let proxies = ConvertsV2Ray(urlResData);
+    if (proxies && Array.isArray(proxies)) {
+      proxiesArr.push(...proxies)
+    }
+    console.log('Failed to obtain proxies');
   }
 
   // 3、proxy-providers
@@ -513,8 +566,8 @@ module.exports = async (req, res) => {
               return [];
             }
           } catch (error) {
-            console.log(`Parse proxy-providers failed. provider url: ${url}`);
-            return [];
+            let proxies = ConvertsV2Ray(data)
+            return proxies ? proxies : [];
           }
         } else {
           return [];
@@ -539,17 +592,18 @@ module.exports = async (req, res) => {
   // 剔除不含 type、server、port 内容的节点（无效节点）
   proxiesArr = proxiesArr.filter(item => item.type && item.server && item.port);
 
-  const ssCipher = ['aes-128-ctr', 'aes-192-ctr', 'aes-256-ctr', 'aes-128-cfb', 'aes-192-cfb'
-  , 'aes-256-cfb', 'aes-128-gcm', 'aes-192-gcm', 'aes-256-gcm', 'aes-128-ccm', 'aes-192-ccm', 'aes-256-ccm',
-  'aes-128-gcm-siv', 'aes-256-gcm-siv', 'chacha20-ietf', 'chacha20', 'xchacha20', 'chacha20-ietf-poly1305', 'xchacha20-ietf-poly1305', 'chacha8-ietf-poly1305', 'xchacha8-ietf-poly1305',
-  '2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm', '2022-blake3-chacha20-poly1305',
-  'lea-128-gcm', 'lea-192-gcm', 'lea-256-gcm',
-    'rabbit128-poly1305', 'aegis-128l', 'aegis-256', 'aez-384', 'deoxys-ii-256-128', 'rc4-md5', 'none']
+  const ssCipher = [
+      'aes-128-ctr', 'aes-192-ctr', 'aes-256-ctr', 'aes-128-cfb', 'aes-192-cfb', 'aes-256-cfb',
+      'aes-128-gcm', 'aes-192-gcm', 'aes-256-gcm', 'aes-128-ccm', 'aes-192-ccm', 'aes-256-ccm',
+      'aes-128-gcm-siv', 'aes-256-gcm-siv',
+      'chacha20-ietf', 'chacha20', 'xchacha20', 'chacha20-ietf-poly1305', 'xchacha20-ietf-poly1305',
+      'chacha8-ietf-poly1305', 'xchacha8-ietf-poly1305',
+      '2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm', '2022-blake3-chacha20-poly1305',
+      'lea-128-gcm', 'lea-192-gcm', 'lea-256-gcm',
+      'rabbit128-poly1305', 'aegis-128l', 'aegis-256', 'aez-384 ', 'deoxys-ii-256-128', 'rc4-md5', 'none'
+  ]
 
   const vmessCiper = ['auto', 'none', 'zero', 'aes-128-gcm', 'chacha20-poly1305']
-
-  // 节点有效性筛选（节点的type不等于cipher）
-  proxiesArr = proxiesArr.filter(item => item.type !== item.cipher);
 
   // 节点cipher有效性筛选
   proxiesArr = proxiesArr.filter(item => {
