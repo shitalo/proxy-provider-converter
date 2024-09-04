@@ -1,7 +1,7 @@
 const Base64 = require("js-base64");
 const url = require("url");
 const YAML = require("yaml");
-const vtool = require('../src/v.js');
+const vtool = require('./v.js');
 
 function isBase64(str) {
     // 检查字符串是否符合 Base64 的正则表达式

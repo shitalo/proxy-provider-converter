@@ -1,9 +1,9 @@
 const YAML = require("yaml");
 const axios = require("axios");
 const Base64 = require("js-base64")
-import { ProxyParser } from '../src/ProxyParsers';
+import { ProxyParser } from '../../utils/ProxyParsers';
 
-import {ConvertsV2Ray} from "../src/MihomoParse";
+import {ConvertsV2Ray} from "../../utils/MihomoParse";
 
 
 function parse_hysteria(outbounds_n) {
