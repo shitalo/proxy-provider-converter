@@ -1,9 +1,7 @@
 const YAML = require("yaml");
 const axios = require("axios");
 const Base64 = require("js-base64")
-import { ProxyParser } from '../../utils/ProxyParsers';
-
-import {ConvertsV2Ray} from "../../utils/MihomoParse";
+const {ConvertsV2Ray, isBase64, isV2rayLink, urlEncodedCheck} = require("../../utils/MihomoParse");
 
 
 function parse_hysteria(outbounds_n) {
@@ -443,28 +441,31 @@ async function fetchData(url) {
   }
 }
 
-/*
-* 测试内容是否是Base64
-* */
-function isBase64(str) {
-  // 定义 base64 字符集的正则表达式
-  const base64Pattern = /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/;
-
-  // 检查字符串是否符合 base64 的正则表达式
-  if (!base64Pattern.test(str)) {
-    return false;
+function uniqueName(names, name) {
+  if (names[name] !== undefined) {
+    names[name]++;
+    name = `${name}-${String(names[name]).padStart(2, '0')}`;
+  } else {
+    names[name] = 0;
   }
-
-  try {
-    // 尝试解码字符串
-    const decoded = Base64.decode(str);
-
-    // 返回尝试解码是否成功，而不关心解码后的内容
-    return true;
-  } catch (error) {
-    return false;
-  }
+  return name;
 }
+
+function ensureUniqueNames(proxiesArr) {
+  let namesCount = {};
+  return proxiesArr.map(proxy => {
+    const originalName = proxy.name;
+    const uniqueNameResult = uniqueName(namesCount, originalName);
+    return {
+      ...proxy,
+      name: uniqueNameResult
+    };
+  });
+}
+
+
+
+
 
 
 
@@ -478,20 +479,7 @@ module.exports = async (req, res) => {
   }
 
   console.log(`Fetching subscribe url: ${url}`);
-/*  let configFile = null;
-  try {
-    const result = await axios({
-      url,
-      headers: {
-        "User-Agent":
-          "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
-      },
-    });
-    configFile = result.data;
-  } catch (error) {
-    res.status(400).send(`Unable to get url, error: ${error}`);
-    return;
-  }*/
+
 
   // 1、http get
   let urlResData = await fetchData(url);
@@ -502,46 +490,42 @@ module.exports = async (req, res) => {
 
   let proxiesArr = []
 
-/*  if (isBase64(urlResData)) {
-    const urls = Base64.decode(urlResData).split('\n').filter(url => url.trim() !== '');
-    const parsedItems = [];
-    for (const url of urls) {
-      const result = await ProxyParser.coverToClashProxies(url);
-      if (Array.isArray(result)) {
-        for (const subUrl of result) {
-          const subResult = await ProxyParser.coverToClashProxies(subUrl);
-          if (subResult) {
-            parsedItems.push(subResult);
-          }
-        }
-      } else if (result) {
-        parsedItems.push(result);
-      }
-    }
-    proxiesArr = parsedItems
-  }*/
-
-
 
   // 从proxieos和provider中提取代理
   // 2、proxies
   console.log(`Extract: proxies`);
-
   try {
-    const proxies = YAML.parse(urlResData)['proxies']
-    if (proxies && Array.isArray(proxies)) {
-      proxiesArr.push(...proxies)
+    let proxies = [];
+    let yaml_parse = YAML.parse(urlResData);
+
+    if (yaml_parse['proxies']) {
+      proxies = YAML.parse(urlResData)['proxies'];
+
     } else {
-      console.log('The proxies key does not exist or the value is not an array');
+      if (isV2rayLink(urlResData)) {
+        proxies =  ConvertsV2Ray(urlResData);
+      } else {
+        console.log('The proxies key does not exist or the value is not an array');
+      }
     }
-  } catch (error) {
-    // res.status(500).send(`Unable parse config, error: ${error}`);
-    // return;
-    let proxies = ConvertsV2Ray(urlResData);
+
+    // console.log(proxies)
     if (proxies && Array.isArray(proxies)) {
       proxiesArr.push(...proxies)
     }
-    console.log('Failed to obtain proxies');
+
+  } catch (error) {
+    console.log(`YAML.parse(urlResData) 失败`)
+    if (isV2rayLink(urlResData)) {
+      console.log(`urlResData: ${urlResData}`)
+      let proxies = ConvertsV2Ray(urlResData);
+      console.log(`proxies: ${JSON.stringify(proxies)}`)
+      if (proxies && Array.isArray(proxies)) {
+        proxiesArr.push(...proxies)
+      }
+    } else {
+      console.log('Failed to obtain proxies');
+    }
   }
 
   // 3、proxy-providers
@@ -562,12 +546,20 @@ module.exports = async (req, res) => {
             if (proxies && Array.isArray(proxies)) {
               return proxies;
             } else {
-              console.log('The proxies in proxy-providers key does not exist or the value is not an array');
-              return [];
+              if (isV2rayLink(data)) {
+                return ConvertsV2Ray(data);
+              } else {
+                console.log('The proxies in proxy-providers key does not exist or the value is not an array');
+                return [];
+              }
             }
           } catch (error) {
-            let proxies = ConvertsV2Ray(data)
-            return proxies ? proxies : [];
+            console.log(`proverdes url yaml parse 失败`)
+            if (isV2rayLink(data)) {
+              return ConvertsV2Ray(data)
+            } else {
+              return [];
+            }
           }
         } else {
           return [];
@@ -627,6 +619,9 @@ module.exports = async (req, res) => {
     res.status(400).send("No proxies in this config");
     return;
   }
+
+  // name 去重
+  proxiesArr = ensureUniqueNames(proxiesArr);
   
 
   if (target === "surge") {

@@ -2,22 +2,56 @@ const Base64 = require("js-base64");
 const url = require("url");
 const YAML = require("yaml");
 const vtool = require('./v.js');
+const CryptoJS = require('crypto-js');
 
-function isBase64(str) {
-    // 检查字符串是否符合 Base64 的正则表达式
-    const base64Regex = /^(?:[A-Z0-9+\/]{4})*(?:[A-Z0-9+\/]{2}==|[A-Z0-9+\/]{3}=)?$/i;
-    // 首先通过正则表达式检查
-    if (!base64Regex.test(str)) {
+function isV2rayLink(inputString) {
+
+    if (!inputString) {
         return false;
     }
-    try {
-        // 尝试解码字符串
-        const decoded = Base64.decode(str);
-
-        // 返回尝试解码是否成功，而不关心解码后的内容
+    if (isBase64(inputString)) {
         return true;
-    } catch (error) {
+    }
+
+    // 将输入字符串按行分割
+    const lines = inputString.split('\n');
+
+    // 遍历每一行
+    for (const line of lines) {
+        // 如果该行不是以#开头
+        if (!line.trim().startsWith('#')) {
+            // 检查该行是否包含 ://
+            if (!line.includes('://')) {
+                return false; // 如果不包含则返回 false
+            }
+        }
+    }
+
+    return true; // 所有符合条件的行都包含 ://，返回 true
+}
+
+function isBase64(str) {
+    if (!str) {
         return false;
+    }
+
+    try {
+        CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(str));
+        return true;
+    }catch (e) {
+        return false;
+    }
+}
+
+function urlEncodedCheck(str) {
+    try {
+        const decoded = decodeURIComponent(str);
+        if (decoded !== str) {
+            return decoded;
+        }
+        return str;
+    } catch (e) {
+        return str;
     }
 }
 
@@ -46,7 +80,8 @@ function ConvertsV2Ray(buf) {
             case "hysteria": {
                 const urlHysteria = new url.URL(line);
                 const query = new URLSearchParams(urlHysteria.search);
-                const name = uniqueName(names, urlHysteria.hash.slice(1)); // 去掉 '#' 符号
+                // const name = uniqueName(names, urlHysteria.hash.slice(1)); // 去掉 '#' 符号
+                const name = uniqueName(names, urlEncodedCheck(urlHysteria.hash.slice(1))); // 去掉 '#' 符号
                 let hysteria = {};
 
                 hysteria['name'] = name;
@@ -82,7 +117,8 @@ function ConvertsV2Ray(buf) {
                 try {
                     const urlHysteria2 = new url.URL(line);
                     const query = new URLSearchParams(urlHysteria2.searchParams);
-                    const name = uniqueName(names, urlHysteria2.hash.slice(1));
+                    // const name = uniqueName(names, urlHysteria2.hash.slice(1));
+                    const name = uniqueName(names, urlEncodedCheck(urlHysteria2.hash.slice(1)));
                     let hysteria2 = {};
 
                     hysteria2["name"] = name;
@@ -171,7 +207,7 @@ function ConvertsV2Ray(buf) {
                 if (!values.ps || typeof values.ps !== 'string') {
                     return;
                 }
-                const name = uniqueName(names, values.ps);
+                const name = uniqueName(names, urlEncodedCheck(values.ps));
 
                 let vmess = {
                     name: name,
@@ -238,33 +274,37 @@ function ConvertsV2Ray(buf) {
                         }
                         if (values["path"]) {
                             let path = values["path"]
-                            pathURL = new URL(path);
-                            let query = pathURL.searchParams;
-                            let earlyData = query.get("ed");
+                            let pathURL;
+                            try {
+                                pathURL = new URL(path);
+                                let query = pathURL.searchParams;
+                                let earlyData = query.get("ed");
 
-                            if (earlyData && earlyData !== "") {
-                                const med = parseInt(earlyData, 10);
-                                if (!isNaN(med)) {
-                                    switch (values.network) {
-                                        case "ws":
-                                            wsOpts["max-early-data"] = med;
-                                            wsOpts["early-data-header-name"] = "Sec-WebSocket-Protocol";
-                                            break;
-                                        case "httpupgrade":
-                                            wsOpts["v2ray-http-upgrade-fast-open"] = true;
-                                            break;
+                                if (earlyData && earlyData !== "") {
+                                    const med = parseInt(earlyData, 10);
+                                    if (!isNaN(med)) {
+                                        switch (values.network) {
+                                            case "ws":
+                                                wsOpts["max-early-data"] = med;
+                                                wsOpts["early-data-header-name"] = "Sec-WebSocket-Protocol";
+                                                break;
+                                            case "httpupgrade":
+                                                wsOpts["v2ray-http-upgrade-fast-open"] = true;
+                                                break;
+                                        }
+                                        query.delete("ed");
+                                        pathURL.search = query.toString();
+                                        path = pathURL.toString();
                                     }
-                                    query.delete("ed");
-                                    pathURL.search = query.toString();
-                                    path = pathURL.toString();
                                 }
-                            }
 
-                            let earlyDataHeader = query.get("eh");
-                            if (earlyDataHeader && earlyDataHeader !== "") {
-                                wsOpts["early-data-header-name"] = earlyDataHeader;
+                                let earlyDataHeader = query.get("eh");
+                                if (earlyDataHeader && earlyDataHeader !== "") {
+                                    wsOpts["early-data-header-name"] = earlyDataHeader;
+                                }
+                                wsOpts["path"] = path;
+                            } catch (e) {
                             }
-                            wsOpts["path"] = path;
                         }
 
                         wsOpts["headers"] = headers
@@ -288,7 +328,7 @@ function ConvertsV2Ray(buf) {
                     const query = new URLSearchParams(urlTUIC.searchParams);
                     let tuic = {};
 
-                    tuic["name"] = uniqueName(names, urlTUIC.hash.slice(1));
+                    tuic["name"] = uniqueName(names, urlEncodedCheck(urlTUIC.hash.slice(1)));
                     tuic["type"] = "tuic"; // 假设 scheme 是 "tuic"
                     tuic["server"] = urlTUIC.hostname;
                     tuic["port"] = urlTUIC.port;
@@ -328,7 +368,7 @@ function ConvertsV2Ray(buf) {
                 try {
                     const urlTrojan = new url.URL(line);
                     const query = new URLSearchParams(urlTrojan.searchParams);
-                    const name = uniqueName(names, urlTrojan.hash.slice(1));
+                    const name = uniqueName(names, urlEncodedCheck(urlTrojan.hash.slice(1)));
                     let trojan = {};
 
                     trojan["name"] = name;
@@ -389,7 +429,7 @@ function ConvertsV2Ray(buf) {
             case "ss": {
                 try {
                     const urlSS = new url.URL(line);
-                    let name = uniqueName(names, urlSS.hash.slice(1));
+                    let name = uniqueName(names, urlEncodedCheck(urlSS.hash.slice(1)));
                     let port = urlSS.port;
 
                     if (!port) {
@@ -497,7 +537,7 @@ function ConvertsV2Ray(buf) {
                     const query = new URLSearchParams(urlSafe(after));
 
                     const remarks = decodeUrlSafe(query.get("remarks"));
-                    const name = uniqueName(names, remarks);
+                    const name = uniqueName(names, urlEncodedCheck(remarks));
 
                     const obfsParam = decodeUrlSafe(query.get("obfsparam"));
                     const protocolParam = query.get("protoparam");
@@ -571,4 +611,4 @@ function cleanObject(obj) {
 }
 
 
-module.exports = { ConvertsV2Ray };
+module.exports = { ConvertsV2Ray, isBase64, isV2rayLink, urlEncodedCheck };

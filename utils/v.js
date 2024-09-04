@@ -276,9 +276,22 @@ function RandUserAgent() {
     return userAgents[randomIndex];
 }
 
+function urlEncodedCheck(str) {
+    try {
+        const decoded = decodeURIComponent(str);
+        if (decoded !== str) {
+            return decoded;
+        }
+        return str;
+    } catch (e) {
+        return str;
+    }
+}
+
 function handleVShareLink(names, urlObj, scheme, proxy) {
     const query = new URLSearchParams(urlObj.search);
-    proxy['name'] = uniqueName(names, urlObj.hash.slice(1)); // Remove the '#' from fragment
+    // proxy['name'] = uniqueName(names, urlObj.hash.slice(1)); // Remove the '#' from fragment
+    proxy['name'] = uniqueName(names, urlEncodedCheck(urlObj.hash.slice(1))); // Remove the '#' from fragment
 
     if (!urlObj.hostname) {
         return new Error('url.Hostname() is empty');
