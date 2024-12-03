@@ -244,13 +244,15 @@ function parse_shadowsocks(outbounds_n) {
   if (address === "127.0.0.1" || address === "") {
     return "";
   }
+  let name = findFieldValue(outbounds_n, 'name') || `[ss]_${address}`;
 
   let port = findFieldValue(outbounds_n, 'port');
   let method = findFieldValue(outbounds_n, 'method') || findFieldValue(outbounds_n, 'cipher');
   let password = findFieldValue(outbounds_n, 'password');
   let method_with_password = `${method}:${password}`;
   let base64EncodedString = utf8ToBase64(method_with_password);
-  let ss = `ss://${base64EncodedString}@${address}:${port}#[ss]_${address}`;
+  // let ss = `ss://${base64EncodedString}@${address}:${port}#[ss]_${address}`;
+  let ss = `ss://${base64EncodedString}@${address}:${port}#${name}`;
 
   return ss;
 }
