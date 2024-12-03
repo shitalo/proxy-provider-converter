@@ -244,7 +244,7 @@ function parse_shadowsocks(outbounds_n) {
   if (address === "127.0.0.1" || address === "") {
     return "";
   }
-  let name = findFieldValue(outbounds_n, 'name') || `[ss]_${address}`;
+  let name = (findFieldValue(outbounds_n, 'name') || `[ss]_${address}`).trim();
 
   let port = findFieldValue(outbounds_n, 'port');
   let method = findFieldValue(outbounds_n, 'method') || findFieldValue(outbounds_n, 'cipher');
