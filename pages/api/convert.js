@@ -661,9 +661,9 @@ module.exports = async (req, res) => {
   // 清理 name 字段中的乱码
   proxiesArr = proxiesArr.filter(proxy => {
     // 判断 name 是否包含乱码字符
-    if (/[^\x00-\x7F]/.test(proxy.name)) {
+    if (/[\p{C}]/gu.test(proxy.name)) {
       // 使用正则表达式删除乱码字符
-      proxy.name = proxy.name.replace(/[^\x00-\x7F]/g, '');
+      proxy.name = proxy.name.replace(/[\p{C}]/gu, '');
 
       // 如果删除乱码后 name 为空，则将 server 的值赋值给 name
       if (!proxy.name) {
