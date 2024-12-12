@@ -650,17 +650,34 @@ module.exports = async (req, res) => {
   // 删除ipv6的节点
   proxiesArr = proxiesArr.filter(proxy => !proxy.server.includes(':'));
 
+
+
   // 没有任何节点
   if (!proxiesArr || (Array.isArray(proxiesArr) && proxiesArr.length === 0)) {
     res.status(400).send("No proxies in this config");
     return;
   }
 
+  // 清理 name 字段中的乱码
+  proxiesArr = proxiesArr.filter(proxy => {
+    // 判断 name 是否包含乱码字符
+    if (/[^\x00-\x7F]/.test(proxy.name)) {
+      // 使用正则表达式删除乱码字符
+      proxy.name = proxy.name.replace(/[^\x00-\x7F]/g, '');
+
+      // 如果删除乱码后 name 为空，则将 server 的值赋值给 name
+      if (!proxy.name) {
+        proxy.name = proxy.server;
+      }
+    }
+    return true; // 保留该元素
+  });
+
   // name 去重
-  // proxiesArr = ensureUniqueNames(proxiesArr);
+  proxiesArr = ensureUniqueNames(proxiesArr);
 
   // proxies 重命名
-  proxiesArr = await updateProxyNames(proxiesArr)
+  // proxiesArr = await updateProxyNames(proxiesArr)
 
   // 使用反转义函数
   // proxiesArr = proxiesArr.map(proxy => ({
