@@ -1,8 +1,8 @@
 const YAML = require("yaml");
 const axios = require("axios");
-const Base64 = require("js-base64")
+const Base64 = require("js-base64");
 const {ConvertsV2Ray, isBase64, isV2rayLink, urlEncodedCheck} = require("../../utils/MihomoParse");
-
+const {getCountryCode} = require("../../utils/GetGeoInfo");
 
 function parse_hysteria(outbounds_n) {
   let server = findFieldValue(outbounds_n, "server") || "";
@@ -469,6 +469,38 @@ function ensureUniqueNames(proxiesArr) {
 
 
 
+async function updateProxyNames(proxies) {
+  // 遍历每个代理对象
+  for (let i = 0; i < proxies.length; i++) {
+    const proxy = proxies[i]; // 获取当前代理对象
+    const server = proxy.server; // 获取代理的服务器地址
+
+    try {
+      // 获取国家代码和相关信息
+      const { ip, country_code, name_emoji } = await getCountryCode(server);
+
+      // 根据代理数量动态生成名称
+      if (proxies.length >= 999) {
+        proxy.name = `${name_emoji}${country_code}-${ip}-${i.toString().padStart(4, '0')}`;
+      } else if (proxies.length <= 999 && proxies.length > 99) {
+        proxy.name = `${name_emoji}${country_code}-${ip}-${i.toString().padStart(3, '0')}`;
+      } else if (proxies.length <= 99) {
+        proxy.name = `${name_emoji}${country_code}-${ip}-${i.toString().padStart(2, '0')}`;
+      }
+    } catch (error) {
+      // 捕获并记录错误
+      console.error(`Error processing proxy with server ${server}:`, error);
+    }
+  }
+
+  // 返回更新后的代理数组
+  return proxies;
+}
+
+
+
+
+
 
 
 module.exports = async (req, res) => {
@@ -616,6 +648,9 @@ module.exports = async (req, res) => {
     return self.findIndex(i => `${i.type || ''}-${i.server || ''}-${i.port || ''}` === key) === index;
   });
 
+  // 删除ipv6的节点
+  proxiesArr = proxiesArr.filter(proxy => !proxy.server.includes(':'));
+
   // 没有任何节点
   if (!proxiesArr || (Array.isArray(proxiesArr) && proxiesArr.length === 0)) {
     res.status(400).send("No proxies in this config");
@@ -623,8 +658,18 @@ module.exports = async (req, res) => {
   }
 
   // name 去重
-  proxiesArr = ensureUniqueNames(proxiesArr);
-  
+  // proxiesArr = ensureUniqueNames(proxiesArr);
+
+  // proxies 重命名
+  proxiesArr = await updateProxyNames(proxiesArr)
+
+  // 使用反转义函数
+  // proxiesArr = proxiesArr.map(proxy => ({
+  //   ...proxy, // 保留其他属性
+  //   name: unescapeString(proxy.name) // 反转义 name 字段
+  // }));
+
+
 
   if (target === "surge") {
     const supportedProxies = proxiesArr.filter((proxy) =>
@@ -704,7 +749,7 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.status(200).send(response);
   } else {
-    const response = YAML.stringify({ proxies: proxiesArr });
+    let response = YAML.stringify({ proxies: proxiesArr });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.status(200).send(response);
   }
