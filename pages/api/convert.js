@@ -480,11 +480,11 @@ async function updateProxyNames(proxies) {
 
       // 根据代理数量动态生成名称
       if (proxies.length >= 999) {
-        proxy.name = `${ip}-${i.toString().padStart(4, '0')}`;
+        proxy.name = `${server}-${i.toString().padStart(4, '0')}`;
       } else if (proxies.length <= 999 && proxies.length > 99) {
-        proxy.name = `${ip}-${i.toString().padStart(3, '0')}`;
+        proxy.name = `${server}-${i.toString().padStart(3, '0')}`;
       } else if (proxies.length <= 99) {
-        proxy.name = `${ip}-${i.toString().padStart(2, '0')}`;
+        proxy.name = `${server}-${i.toString().padStart(2, '0')}`;
       }
     } catch (error) {
       // 捕获并记录错误
