@@ -2,7 +2,6 @@ const YAML = require("yaml");
 const axios = require("axios");
 const Base64 = require("js-base64");
 const {ConvertsV2Ray, isBase64, isV2rayLink, urlEncodedCheck} = require("../../utils/MihomoParse");
-const {getCountryCode} = require("../../utils/GetGeoInfo");
 
 function parse_hysteria(outbounds_n) {
   let server = findFieldValue(outbounds_n, "server") || "";
