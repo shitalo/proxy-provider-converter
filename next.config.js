@@ -16,9 +16,6 @@ module.exports = withBundleAnalyzer({
 
     return config;
   },
-  experimental: {
-    serverComponentsExternalPackages: ["geoip-lite"],
-  },
   async rewrites() {
     return [
       {
