@@ -529,10 +529,11 @@ module.exports = async (req, res) => {
   let urlRes = await fetchData(url);
   let urlResData = urlRes.data;
   // let USER_INFO = 'upload=0; download=0; total=2748779069440'
-  let USER_INFO = 'upload=0; download=0; total=10737418240000000; expire=2546249531';
+  let USER_INFO = 'upload=268435456000; download=268435456000; total=1153433591808; expire=4102329600';
 
   if (urlRes.headers['subscription-userinfo']) {
     USER_INFO = urlRes.headers['subscription-userinfo'];
+    console.log(USER_INFO)
   }
 
   if (!urlResData) {
