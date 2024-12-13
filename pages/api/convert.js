@@ -108,6 +108,7 @@ function parse_hy2(outbounds_n) {
 // ----------------------------------------- 解析和构建 vless 节点 ------------------------------------------
 
 function parse_vless(outbounds_n) {
+  let name = findFieldValue(outbounds_n, "name") || "";
   let address = findFieldValue(outbounds_n, "address") || findFieldValue(outbounds_n, 'server') || "";
   if (address === "127.0.0.1" || address === "") {
     return "";
@@ -167,8 +168,10 @@ function parse_vless(outbounds_n) {
   );
   // 进行 URL 参数编码
   const encodedParams = new URLSearchParams(filteredParams).toString();
+  const encodeName = new URLSearchParams(name).toString();
 
-  let vless = `vless://${uuid}@${address}:${port}?${encodedParams}#[vless]_${address}:${port}`;
+  // let vless = `vless://${uuid}@${address}:${port}?${encodedParams}#[vless]_${address}:${port}`;
+  let vless = `vless://${uuid}@${address}:${port}?${encodedParams}#${encodeName}`;
 
   return vless;
 }
@@ -176,6 +179,7 @@ function parse_vless(outbounds_n) {
 // ----------------------------------------- 解析和构建 vmess 节点 ------------------------------------------
 
 function parse_vmess(outbounds_n) {
+  let name = findFieldValue(outbounds_n, "name") || "";
   let address = findFieldValue(outbounds_n, "address") || findFieldValue(outbounds_n, 'server') || "";
   if (address === "127.0.0.1" || address === "") {
     return "";
@@ -206,7 +210,8 @@ function parse_vmess(outbounds_n) {
   let fp = findFieldValue(outbounds_n, 'client-fingerprint') || findFieldValue(outbounds_n, 'fingerprint') || "";
   let vmess_dict = {
     "v": "2",
-    "ps": `[vmess]_${address}:${port}`,
+    // "ps": `[vmess]_${address}:${port}`,
+    "ps": `${name}`,
     "add": address,
     "port": port,
     "id": uuid,
@@ -239,11 +244,12 @@ function parse_vmess(outbounds_n) {
 // -------------------------------------- 解析和构建 shadowsocks 节点 ---------------------------------------
 
 function parse_shadowsocks(outbounds_n) {
+  let name = (findFieldValue(outbounds_n, 'name') || `[ss]_${address}`).trim();
+
   let address = findFieldValue(outbounds_n, 'address') || findFieldValue(outbounds_n, 'server') || "";
   if (address === "127.0.0.1" || address === "") {
     return "";
   }
-  let name = (findFieldValue(outbounds_n, 'name') || `[ss]_${address}`).trim();
 
   let port = findFieldValue(outbounds_n, 'port');
   let method = findFieldValue(outbounds_n, 'method') || findFieldValue(outbounds_n, 'cipher');
@@ -259,6 +265,7 @@ function parse_shadowsocks(outbounds_n) {
 // ----------------------------------------- 解析和构建 trojan 节点 -----------------------------------------
 
 function parse_trojan(outbounds_n) {
+  let name = findFieldValue(outbounds_n, "name") || "";
   let server = findFieldValue(outbounds_n, "server") || "";
   if (server.startsWith("127.0.0.1") || server === "") {
     return "";
@@ -294,7 +301,8 @@ function parse_trojan(outbounds_n) {
   // 进行 URL 参数编码
   const encodedParams = new URLSearchParams(filteredParams).toString();
 
-  let trojan = `trojan://${password}@${server}:${port}?${encodedParams}#[trojan]_${server}`;
+  // let trojan = `trojan://${password}@${server}:${port}?${encodedParams}#[trojan]_${server}`;
+  let trojan = `trojan://${password}@${server}:${port}?${encodedParams}#${name}`;
 
   return trojan;
 }
@@ -435,7 +443,8 @@ async function fetchData(url) {
       },
       timeout: 30 * 1000
     });
-    return result.data;
+    // console.log(result.headers['subscription-userinfo'] || '没有');
+    return result;
   } catch (error) {
     console.log(`Fetch url failed: ${url}`);
     return null; // 返回 null 或者一个空字符串，以避免在后续处理中出错
@@ -515,8 +524,13 @@ module.exports = async (req, res) => {
 
 
   // 1、http get
-  let urlResData = await fetchData(url);
-  if (!urlResData) {
+  let urlRes = await fetchData(url);
+  let USER_INFO = 'upload=0; download=0; total=2748779069440'
+  if (urlRes.headers['subscription-userinfo']) {
+    USER_INFO = urlRes.headers['subscription-userinfo'];
+  }
+
+  if (!urlRes.data) {
     res.status(400).send(`Fetching subscribe url failed`);
     return
   }
@@ -570,7 +584,7 @@ module.exports = async (req, res) => {
     for (const val in providers) {
       let url = String(providers[val]['url']);
       console.log(`Fetching providers url: ${url}`);
-      fetchPromises.push(fetchData(url).then(data => {
+      fetchPromises.push(fetchData(url).data.then(data => {
         // console.log(`${val}开始请求：${url}`)
         if (data) {
           // console.log(`${val}请求结束：${url}`)
@@ -759,14 +773,17 @@ module.exports = async (req, res) => {
     });
     const proxies = surgeProxies.filter((p) => p !== undefined);
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('subscription-userinfo', USER_INFO)
     res.status(200).send(proxies.join("\n"));
   } else if (target === "sub") {
     const response = proxiesToSub(proxiesArr);
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('subscription-userinfo', USER_INFO)
     res.status(200).send(response);
   } else {
     let response = YAML.stringify({ proxies: proxiesArr });
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('subscription-userinfo', USER_INFO)
     res.status(200).send(response);
   }
 };
