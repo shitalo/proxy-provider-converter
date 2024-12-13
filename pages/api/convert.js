@@ -525,12 +525,13 @@ module.exports = async (req, res) => {
 
   // 1、http get
   let urlRes = await fetchData(url);
+  let urlResData = urlRes.data;
   let USER_INFO = 'upload=0; download=0; total=2748779069440'
   if (urlRes.headers['subscription-userinfo']) {
     USER_INFO = urlRes.headers['subscription-userinfo'];
   }
 
-  if (!urlRes.data) {
+  if (!urlResData) {
     res.status(400).send(`Fetching subscribe url failed`);
     return
   }
