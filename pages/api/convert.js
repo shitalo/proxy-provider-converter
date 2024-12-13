@@ -4,6 +4,7 @@ const Base64 = require("js-base64");
 const {ConvertsV2Ray, isBase64, isV2rayLink, urlEncodedCheck} = require("../../utils/MihomoParse");
 
 function parse_hysteria(outbounds_n) {
+  let name = findFieldValue(outbounds_n, "name") || "";
   let server = findFieldValue(outbounds_n, "server") || "";
   if (server.startsWith("127.0.0.1") || server === "") {
     return "";
@@ -58,6 +59,7 @@ function parse_hysteria(outbounds_n) {
 // ------------------------------------------ 解析和构建 hy2 节点 -------------------------------------------
 
 function parse_hy2(outbounds_n) {
+  let name = findFieldValue(outbounds_n, "name") || "";
   let server = findFieldValue(outbounds_n, 'server') || "";
   if (server.startsWith("127.0.0.1") || server === "") {
     return "";
@@ -309,6 +311,7 @@ function parse_trojan(outbounds_n) {
 // ------------------------------------------ 解析和构建 tuic 节点 ------------------------------------------
 
 function parse_tuic(outbounds_n) {
+  let name = findFieldValue(outbounds_n, "name") || "";
   let uuid = findFieldValue(outbounds_n, 'uuid');
   let password = findFieldValue(outbounds_n, 'password');
   let server = findFieldValue(outbounds_n, 'server') || "";
@@ -525,7 +528,9 @@ module.exports = async (req, res) => {
   // 1、http get
   let urlRes = await fetchData(url);
   let urlResData = urlRes.data;
-  let USER_INFO = 'upload=0; download=0; total=2748779069440'
+  // let USER_INFO = 'upload=0; download=0; total=2748779069440'
+  let USER_INFO = 'upload=0; download=0; total=10737418240000000; expire=2546249531';
+
   if (urlRes.headers['subscription-userinfo']) {
     USER_INFO = urlRes.headers['subscription-userinfo'];
   }
