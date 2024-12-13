@@ -453,6 +453,23 @@ async function fetchData(url) {
   }
 }
 
+async function fetchData2(url) {
+  try {
+    const result = await axios({
+      url,
+      headers: {
+        "User-Agent": "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
+      },
+      timeout: 30 * 1000
+    });
+    // console.log(result.headers['subscription-userinfo'] || '没有');
+    return result.data;
+  } catch (error) {
+    console.log(`Fetch url failed: ${url}`);
+    return null; // 返回 null 或者一个空字符串，以避免在后续处理中出错
+  }
+}
+
 function uniqueName(names, name) {
   if (names[name] !== undefined) {
     names[name]++;
@@ -590,18 +607,17 @@ module.exports = async (req, res) => {
     for (const val in providers) {
       let url = String(providers[val]['url']);
       console.log(`Fetching providers url: ${url}`);
-      fetchPromises.push(fetchData(url).then(response => {
+      fetchPromises.push(fetchData2(url).then(data => {
         // console.log(`${val}开始请求：${url}`)
-        resData = response.data;
-        if (resData) {
+        if (data) {
           // console.log(`${val}请求结束：${url}`)
           try {
-            let proxies = YAML.parse(resData)['proxies'];
+            let proxies = YAML.parse(data)['proxies'];
             if (proxies && Array.isArray(proxies)) {
               return proxies;
             } else {
-              if (isV2rayLink(resData)) {
-                return ConvertsV2Ray(resData);
+              if (isV2rayLink(data)) {
+                return ConvertsV2Ray(data);
               } else {
                 console.log('The proxies in proxy-providers key does not exist or the value is not an array');
                 return [];
@@ -609,8 +625,8 @@ module.exports = async (req, res) => {
             }
           } catch (error) {
             console.log(`proverdes url yaml parse 失败`)
-            if (isV2rayLink(resData)) {
-              return ConvertsV2Ray(resData)
+            if (isV2rayLink(data)) {
+              return ConvertsV2Ray(data)
             } else {
               return [];
             }
