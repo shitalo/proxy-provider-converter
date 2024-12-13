@@ -168,10 +168,9 @@ function parse_vless(outbounds_n) {
   );
   // 进行 URL 参数编码
   const encodedParams = new URLSearchParams(filteredParams).toString();
-  const encodeName = new URLSearchParams(name).toString();
 
   // let vless = `vless://${uuid}@${address}:${port}?${encodedParams}#[vless]_${address}:${port}`;
-  let vless = `vless://${uuid}@${address}:${port}?${encodedParams}#${encodeName}`;
+  let vless = `vless://${uuid}@${address}:${port}?${encodedParams}#${name}`;
 
   return vless;
 }
