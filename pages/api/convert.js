@@ -590,17 +590,18 @@ module.exports = async (req, res) => {
     for (const val in providers) {
       let url = String(providers[val]['url']);
       console.log(`Fetching providers url: ${url}`);
-      fetchPromises.push(fetchData(url).data.then(data => {
+      fetchPromises.push(fetchData(url).then(response => {
         // console.log(`${val}开始请求：${url}`)
-        if (data) {
+        resData = response.data;
+        if (resData) {
           // console.log(`${val}请求结束：${url}`)
           try {
-            let proxies = YAML.parse(data)['proxies'];
+            let proxies = YAML.parse(resData)['proxies'];
             if (proxies && Array.isArray(proxies)) {
               return proxies;
             } else {
-              if (isV2rayLink(data)) {
-                return ConvertsV2Ray(data);
+              if (isV2rayLink(resData)) {
+                return ConvertsV2Ray(resData);
               } else {
                 console.log('The proxies in proxy-providers key does not exist or the value is not an array');
                 return [];
@@ -608,8 +609,8 @@ module.exports = async (req, res) => {
             }
           } catch (error) {
             console.log(`proverdes url yaml parse 失败`)
-            if (isV2rayLink(data)) {
-              return ConvertsV2Ray(data)
+            if (isV2rayLink(resData)) {
+              return ConvertsV2Ray(resData)
             } else {
               return [];
             }
