@@ -18,13 +18,28 @@ function isV2rayLink(inputString) {
 
     // 遍历每一行
     for (const line of lines) {
-        // 如果该行不是以#开头
-        if (!line.trim().startsWith('#')) {
-            // 检查该行是否包含 ://
-            if (!line.includes('://')) {
-                return false; // 如果不包含则返回 false
-            }
+        const trimmedLine = line.trim();
+
+        // 忽略空行和注释行
+        if (trimmedLine === '' || trimmedLine.startsWith('#')) {
+            continue; // 跳过空行和注释行
         }
+
+        console.log('非注释行: ', line);
+        if (!line.includes('://')) {
+            return false; // 如果不包含则返回 false
+        }
+        // console.log('包含://行');
+        // // 如果该行不是以#开头
+        // if (!line.trim().startsWith('#')) {
+        //     // 检查该行是否包含 ://
+        //     console.log('非注释行: ', line);
+        //     if (!line.includes('://')) {
+        //         console.log('不含://行');
+        //         return false; // 如果不包含则返回 false
+        //     }
+        //     console.log('包含://行');
+        // }
     }
 
     return true; // 所有符合条件的行都包含 ://，返回 true

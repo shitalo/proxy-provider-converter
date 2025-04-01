@@ -564,6 +564,7 @@ module.exports = async (req, res) => {
   // 从proxieos和provider中提取代理
   // 2、proxies
   console.log(`Extract: proxies`);
+  // console.log('ResData:\n', urlResData);
   try {
     let proxies = [];
     let yaml_parse = YAML.parse(urlResData);
@@ -573,7 +574,7 @@ module.exports = async (req, res) => {
 
     } else {
       if (isV2rayLink(urlResData)) {
-        proxies =  ConvertsV2Ray(urlResData);
+        proxies = ConvertsV2Ray(urlResData);
       } else {
         console.log('The proxies key does not exist or the value is not an array');
       }
