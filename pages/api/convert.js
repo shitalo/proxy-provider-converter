@@ -541,9 +541,32 @@ module.exports = async (req, res) => {
 
   console.log(`Fetching subscribe url: ${url}`);
 
-
   // 1、http get
   let urlRes = await fetchData(url);
+
+  // 检查响应是否有效
+  try {
+    if (!urlRes) {
+      res.status(400).send('Fetching subscribe url failed: No response received');
+      return;
+    }
+
+    if (!urlRes.headers) {
+      res.status(400).send('Fetching subscribe url failed: No headers in response');
+      return;
+    }
+
+    if (!urlRes.data) {
+      res.status(400).send('Fetching subscribe url failed: No data in response');
+      return;
+    }
+  } catch (error) {
+    // 捕获任何异常并返回错误信息
+    console.error('Error fetching data:', error);
+    res.status(500).send('Internal server error');
+    return;
+  }
+
   let urlResData = urlRes.data;
   // let USER_INFO = 'upload=0; download=0; total=2748779069440'
   let USER_INFO = 'upload=268435456000; download=268435456000; total=11534335918080; expire=4102329600';
