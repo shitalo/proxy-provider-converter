@@ -526,7 +526,25 @@ async function updateProxyNames(proxies) {
 
 
 
-
+function anything_to_proxy(data) {
+  if (!data) {
+    return null;
+  }
+  try {
+    let proxies = YAML.parse(data)['proxies'];
+    if (proxies && Array.isArray(proxies)) {
+      return proxies;
+    }
+    if (isV2rayLink(data)) {
+      return ConvertsV2Ray(data);
+    }
+    return null;
+  } catch (e) {
+    if (isV2rayLink(data)) {
+      return ConvertsV2Ray(data);
+    }
+  }
+}
 
 
 
@@ -576,105 +594,149 @@ module.exports = async (req, res) => {
     console.log(USER_INFO)
   }
 
-  if (!urlResData) {
-    res.status(400).send(`Fetching subscribe url failed`);
-    return
-  }
-
   let proxiesArr = []
-
 
   // 从proxieos和provider中提取代理
   // 2、proxies
   console.log(`Extract: proxies`);
-  // console.log('ResData:\n', urlResData);
-  try {
-    let proxies = [];
-    let yaml_parse = YAML.parse(urlResData);
 
-    if (yaml_parse['proxies']) {
-      proxies = YAML.parse(urlResData)['proxies'];
-
-    } else {
-      if (isV2rayLink(urlResData)) {
-        proxies = ConvertsV2Ray(urlResData);
-      } else {
-        console.log('The proxies key does not exist or the value is not an array');
-      }
-    }
-
-    // console.log(proxies)
-    if (proxies && Array.isArray(proxies)) {
-      proxiesArr.push(...proxies)
-    }
-
-  } catch (error) {
-    console.log(`YAML.parse(urlResData) 失败`)
-    if (isV2rayLink(urlResData)) {
-      console.log(`urlResData: ${urlResData}`)
-      let proxies = ConvertsV2Ray(urlResData);
-      console.log(`proxies: ${JSON.stringify(proxies)}`)
-      if (proxies && Array.isArray(proxies)) {
-        proxiesArr.push(...proxies)
-      }
-    } else {
-      console.log('Failed to obtain proxies');
-    }
+  let yml_proxies = anything_to_proxy(urlResData);
+  if (yml_proxies && Array.isArray(yml_proxies)) {
+    console.log(`proxies中代理数量: ${yml_proxies.length}`)
+    proxiesArr.push(...yml_proxies)
   }
+
+
+  // console.log('ResData:\n', urlResData);
+  // try {
+  //   let proxies = [];
+  //   let yaml_parse = YAML.parse(urlResData);
+  //
+  //   if (yaml_parse['proxies']) {
+  //     proxies = YAML.parse(urlResData)['proxies'];
+  //
+  //   } else {
+  //     if (isV2rayLink(urlResData)) {
+  //       proxies = ConvertsV2Ray(urlResData);
+  //     } else {
+  //       console.log('The proxies key does not exist or the value is not an array');
+  //     }
+  //   }
+  //
+  //   // console.log(proxies)
+  //   if (proxies && Array.isArray(proxies)) {
+  //     proxiesArr.push(...proxies)
+  //   }
+  //
+  // } catch (error) {
+  //   console.log(`YAML.parse(urlResData) 失败`)
+  //   if (isV2rayLink(urlResData)) {
+  //     console.log(`urlResData: ${urlResData}`)
+  //     let proxies = ConvertsV2Ray(urlResData);
+  //     console.log(`proxies: ${JSON.stringify(proxies)}`)
+  //     if (proxies && Array.isArray(proxies)) {
+  //       proxiesArr.push(...proxies)
+  //     }
+  //   } else {
+  //     console.log('Failed to obtain proxies');
+  //   }
+  // }
 
   // 3、proxy-providers
-  console.log(`Extract: proxy-providers`);
+  // console.log(`Extract: proxy-providers`);
+  // try {
+  //   let providers = YAML.parse(urlResData)['proxy-providers'];
+  //   let fetchPromises = [];
+  //
+  //   for (const val in providers) {
+  //     let url = String(providers[val]['url']);
+  //     console.log(`Fetching providers url: ${url}`);
+  //     fetchPromises.push(fetchData2(url).then(data => {
+  //       // console.log(`${val}开始请求：${url}`)
+  //       if (data) {
+  //         // console.log(`${val}请求结束：${url}`)
+  //         try {
+  //           let proxies = YAML.parse(data)['proxies'];
+  //           if (proxies && Array.isArray(proxies)) {
+  //             return proxies;
+  //           } else {
+  //             if (isV2rayLink(data)) {
+  //               return ConvertsV2Ray(data);
+  //             } else {
+  //               console.log('The proxies in proxy-providers key does not exist or the value is not an array');
+  //               return [];
+  //             }
+  //           }
+  //         } catch (error) {
+  //           console.log(`proverdes url yaml parse 失败`)
+  //           if (isV2rayLink(data)) {
+  //             return ConvertsV2Ray(data)
+  //           } else {
+  //             return [];
+  //           }
+  //         }
+  //       } else {
+  //         return [];
+  //       }
+  //     }));
+  //   }
+  //
+  //   // 并行处理所有的 fetch 请求
+  //   let results = await Promise.all(fetchPromises);
+  //
+  //   // 将所有结果合并到 proxiesArr 中
+  //   results.forEach(proxies => {
+  //     proxiesArr.push(...proxies);
+  //   });
+  //
+  // } catch (error) {
+  //   console.log('Failed to obtain proxy-providers');
+  // }
+
+  // 3、provider解析
+  let fetchPromises = [];
+
   try {
     let providers = YAML.parse(urlResData)['proxy-providers'];
-    let fetchPromises = [];
-
     for (const val in providers) {
-      let url = String(providers[val]['url']);
-      console.log(`Fetching providers url: ${url}`);
-      fetchPromises.push(fetchData2(url).then(data => {
-        // console.log(`${val}开始请求：${url}`)
-        if (data) {
-          // console.log(`${val}请求结束：${url}`)
-          try {
-            let proxies = YAML.parse(data)['proxies'];
-            if (proxies && Array.isArray(proxies)) {
-              return proxies;
-            } else {
-              if (isV2rayLink(data)) {
-                return ConvertsV2Ray(data);
-              } else {
-                console.log('The proxies in proxy-providers key does not exist or the value is not an array');
-                return [];
-              }
-            }
-          } catch (error) {
-            console.log(`proverdes url yaml parse 失败`)
-            if (isV2rayLink(data)) {
-              return ConvertsV2Ray(data)
-            } else {
-              return [];
-            }
-          }
-        } else {
-          return [];
-        }
-      }));
+      try {
+        let providerUrl = String(providers[val]['url']);
+        fetchPromises.push(fetchData(providerUrl)); // 将每个 fetch 请求的 Promise 添加到数组中
+      } catch (e) {
+        console.error(`Error processing provider: ${e}`);
+      }
     }
-
-    // 并行处理所有的 fetch 请求
-    let results = await Promise.all(fetchPromises);
-
-    // 将所有结果合并到 proxiesArr 中
-    results.forEach(proxies => {
-      proxiesArr.push(...proxies);
-    });
-
-  } catch (error) {
-    console.log('Failed to obtain proxy-providers');
+  } catch (e) {
+    console.error(`YAML解析provider失败: ${e}`);
   }
 
+  // 等待所有 fetch 请求完成
+  const responses = await Promise.all(fetchPromises);
+  // 处理每个响应
+  const results = await Promise.all(responses.map(async (response) => {
+    try {
+      // 检查响应是否有效
+      if (!response || !response.headers || !response.data) {
+        return null;
+      }
+      return response.data; // 返回有效的数据
+    } catch (e) {
+      console.error('Error fetching data from provider:', e);
+      return null; // 返回 null 以表示出错
+    }
+  }));
 
+  for (const val of results) {
+    if (val) {
+      let provider_proxies = anything_to_proxy(val);
+      if (provider_proxies && Array.isArray(provider_proxies)) {
+        console.log(`providers中代理数量: ${provider_proxies.length}`);
+        proxiesArr.push(...provider_proxies);
+      }
+    }
+  }
 
+  
   // 剔除不含 type、server、port 内容的节点（无效节点）
   proxiesArr = proxiesArr.filter(item => item.type && item.server && item.port);
 

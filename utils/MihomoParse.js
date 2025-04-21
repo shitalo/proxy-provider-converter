@@ -25,7 +25,7 @@ function isV2rayLink(inputString) {
             continue; // 跳过空行和注释行
         }
 
-        console.log('非注释行: ', line);
+        // console.log('非注释行: ', line);
         if (!line.includes('://')) {
             return false; // 如果不包含则返回 false
         }

@@ -218,29 +218,6 @@ ${convertedUrl}
             </li>
           </ul>
         </div>
-        <div className="w-full text-gray-900 mt-14">
-          <h3 className="text-lg md:text-xl font-bold">资源</h3>
-          <ul className="mt-1 list-disc list-inside	">
-            <li>
-              <a
-                href="https://github.com/Dreamacro/clash/wiki/configuration#proxy-providers"
-                target="_blank"
-                className="text-yellow-600 transition hover:text-yellow-500"
-              >
-                Clash Wiki 中的 Proxy Providers 章节
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://manual.nssurge.com/policy/group.html"
-                target="_blank"
-                className="text-yellow-600 transition hover:text-yellow-500"
-              >
-                Surge Policy Group 文档
-              </a>
-            </li>
-          </ul>
-        </div>
       </main>
 
       <footer className="w-full p-4 max-w-4xl md:py-8">
