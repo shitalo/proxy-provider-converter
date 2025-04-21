@@ -453,22 +453,22 @@ async function fetchData(url) {
   }
 }
 
-async function fetchData2(url) {
-  try {
-    const result = await axios({
-      url,
-      headers: {
-        "User-Agent": "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
-      },
-      timeout: 30 * 1000
-    });
-    // console.log(result.headers['subscription-userinfo'] || '没有');
-    return result.data;
-  } catch (error) {
-    console.log(`Fetch url failed: ${url}`);
-    return null; // 返回 null 或者一个空字符串，以避免在后续处理中出错
-  }
-}
+// async function fetchData2(url) {
+//   try {
+//     const result = await axios({
+//       url,
+//       headers: {
+//         "User-Agent": "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
+//       },
+//       timeout: 30 * 1000
+//     });
+//     // console.log(result.headers['subscription-userinfo'] || '没有');
+//     return result.data;
+//   } catch (error) {
+//     console.log(`Fetch url failed: ${url}`);
+//     return null; // 返回 null 或者一个空字符串，以避免在后续处理中出错
+//   }
+// }
 
 function uniqueName(names, name) {
   if (names[name] !== undefined) {
@@ -736,7 +736,7 @@ module.exports = async (req, res) => {
     }
   }
 
-  
+
   // 剔除不含 type、server、port 内容的节点（无效节点）
   proxiesArr = proxiesArr.filter(item => item.type && item.server && item.port);
 
