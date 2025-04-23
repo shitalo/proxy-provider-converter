@@ -79,7 +79,7 @@ ${convertedUrl}
               Proxy Provider Converter
             </h1>
             <p className="mt-2 md:text-lg text-gray-600">
-              一个可以将 Clash 订阅转换成 Proxy Provider 和 External
+              一个可以将 Clash、Base64、URL 订阅转换成 Proxy Provider 和 External
               Group(Surge) 的工具
             </p>
           </div>
@@ -90,7 +90,7 @@ ${convertedUrl}
           </h3>
           <p className="mt-2">
             <a
-              href="https://github.com/Dreamacro/clash/wiki/configuration#proxy-providers"
+              href="https://wiki.metacubex.one/config/proxy-providers"
               className="text-yellow-600 transition hover:text-yellow-500"
             >
               Proxy Provider
@@ -108,7 +108,7 @@ ${convertedUrl}
           <div className="flex w-full gap-4 mt-4 flex-col md:flex-row">
             <input
               className="w-full h-full p-4 text-lg bg-white rounded-lg shadow-sm focus:outline-none"
-              placeholder="粘贴 Clash 订阅链接到这里"
+              placeholder="粘贴 Clash、Base64、URL 订阅链接到这里"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
@@ -142,9 +142,13 @@ ${convertedUrl}
           <div className="w-full p-4 mt-4 text-gray-100 bg-gray-900 rounded-lg hidden md:block">
             {/* prettier-ignore */}
 
-            {target === "surge" && <pre>{surgeConfig}</pre>}
+            {target === "surge" && (
+                <pre className="whitespace-pre-wrap">{surgeConfig}</pre>
+            )}
 
-            {target === "sub" && <pre>{subConfig}</pre>}
+            {target === "sub" && (
+                <pre className="whitespace-pre-wrap">{subConfig}</pre>
+            )}
 
             {target !== "surge" && target !== "sub" &&(
               <pre className="whitespace-pre-wrap">{clashConfig}</pre>
