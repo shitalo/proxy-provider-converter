@@ -435,7 +435,6 @@ function proxiesToSub(outbounds) {
   return Base64.encode(uniqueArray.join('\n'));
 }
 
-
 async function fetchData(url) {
   try {
     const result = await axios({
@@ -452,23 +451,6 @@ async function fetchData(url) {
     return null; // 返回 null 或者一个空字符串，以避免在后续处理中出错
   }
 }
-
-// async function fetchData2(url) {
-//   try {
-//     const result = await axios({
-//       url,
-//       headers: {
-//         "User-Agent": "ClashX Pro/1.72.0.4 (com.west2online.ClashXPro; build:1.72.0.4; macOS 12.0.1) Alamofire/5.4.4",
-//       },
-//       timeout: 30 * 1000
-//     });
-//     // console.log(result.headers['subscription-userinfo'] || '没有');
-//     return result.data;
-//   } catch (error) {
-//     console.log(`Fetch url failed: ${url}`);
-//     return null; // 返回 null 或者一个空字符串，以避免在后续处理中出错
-//   }
-// }
 
 function uniqueName(names, name) {
   if (names[name] !== undefined) {
@@ -492,40 +474,6 @@ function ensureUniqueNames(proxiesArr) {
   });
 }
 
-
-
-
-
-async function updateProxyNames(proxies) {
-  // 遍历每个代理对象
-  for (let i = 0; i < proxies.length; i++) {
-    const proxy = proxies[i]; // 获取当前代理对象
-    const server = proxy.server; // 获取代理的服务器地址
-
-    try {
-      // 获取国家代码和相关信息
-      // const { ip, country_code, name_emoji } = await getCountryCode(server);
-
-      // 根据代理数量动态生成名称
-      if (proxies.length >= 999) {
-        proxy.name = `${server}-${i.toString().padStart(4, '0')}`;
-      } else if (proxies.length <= 999 && proxies.length > 99) {
-        proxy.name = `${server}-${i.toString().padStart(3, '0')}`;
-      } else if (proxies.length <= 99) {
-        proxy.name = `${server}-${i.toString().padStart(2, '0')}`;
-      }
-    } catch (error) {
-      // 捕获并记录错误
-      console.error(`Error processing proxy with server ${server}:`, error);
-    }
-  }
-
-  // 返回更新后的代理数组
-  return proxies;
-}
-
-
-
 function anything_to_proxy(data) {
   if (!data) {
     return null;
@@ -545,8 +493,6 @@ function anything_to_proxy(data) {
     }
   }
 }
-
-
 
 module.exports = async (req, res) => {
   const url = req.query.url;
@@ -597,7 +543,7 @@ module.exports = async (req, res) => {
   let proxiesArr = []
 
   // 从proxieos和provider中提取代理
-  // 2、proxies
+  // 2、proxies解析
   console.log(`Extract: proxies`);
 
   let yml_proxies = anything_to_proxy(urlResData);
@@ -606,92 +552,6 @@ module.exports = async (req, res) => {
     proxiesArr.push(...yml_proxies)
   }
 
-
-  // console.log('ResData:\n', urlResData);
-  // try {
-  //   let proxies = [];
-  //   let yaml_parse = YAML.parse(urlResData);
-  //
-  //   if (yaml_parse['proxies']) {
-  //     proxies = YAML.parse(urlResData)['proxies'];
-  //
-  //   } else {
-  //     if (isV2rayLink(urlResData)) {
-  //       proxies = ConvertsV2Ray(urlResData);
-  //     } else {
-  //       console.log('The proxies key does not exist or the value is not an array');
-  //     }
-  //   }
-  //
-  //   // console.log(proxies)
-  //   if (proxies && Array.isArray(proxies)) {
-  //     proxiesArr.push(...proxies)
-  //   }
-  //
-  // } catch (error) {
-  //   console.log(`YAML.parse(urlResData) 失败`)
-  //   if (isV2rayLink(urlResData)) {
-  //     console.log(`urlResData: ${urlResData}`)
-  //     let proxies = ConvertsV2Ray(urlResData);
-  //     console.log(`proxies: ${JSON.stringify(proxies)}`)
-  //     if (proxies && Array.isArray(proxies)) {
-  //       proxiesArr.push(...proxies)
-  //     }
-  //   } else {
-  //     console.log('Failed to obtain proxies');
-  //   }
-  // }
-
-  // 3、proxy-providers
-  // console.log(`Extract: proxy-providers`);
-  // try {
-  //   let providers = YAML.parse(urlResData)['proxy-providers'];
-  //   let fetchPromises = [];
-  //
-  //   for (const val in providers) {
-  //     let url = String(providers[val]['url']);
-  //     console.log(`Fetching providers url: ${url}`);
-  //     fetchPromises.push(fetchData2(url).then(data => {
-  //       // console.log(`${val}开始请求：${url}`)
-  //       if (data) {
-  //         // console.log(`${val}请求结束：${url}`)
-  //         try {
-  //           let proxies = YAML.parse(data)['proxies'];
-  //           if (proxies && Array.isArray(proxies)) {
-  //             return proxies;
-  //           } else {
-  //             if (isV2rayLink(data)) {
-  //               return ConvertsV2Ray(data);
-  //             } else {
-  //               console.log('The proxies in proxy-providers key does not exist or the value is not an array');
-  //               return [];
-  //             }
-  //           }
-  //         } catch (error) {
-  //           console.log(`proverdes url yaml parse 失败`)
-  //           if (isV2rayLink(data)) {
-  //             return ConvertsV2Ray(data)
-  //           } else {
-  //             return [];
-  //           }
-  //         }
-  //       } else {
-  //         return [];
-  //       }
-  //     }));
-  //   }
-  //
-  //   // 并行处理所有的 fetch 请求
-  //   let results = await Promise.all(fetchPromises);
-  //
-  //   // 将所有结果合并到 proxiesArr 中
-  //   results.forEach(proxies => {
-  //     proxiesArr.push(...proxies);
-  //   });
-  //
-  // } catch (error) {
-  //   console.log('Failed to obtain proxy-providers');
-  // }
 
   // 3、provider解析
   let fetchPromises = [];
@@ -753,7 +613,7 @@ module.exports = async (req, res) => {
 
   const vmessCiper = ['auto', 'none', 'zero', 'aes-128-gcm', 'chacha20-poly1305']
 
-  // 节点cipher有效性筛选
+  // 节点cipher校验
   proxiesArr = proxiesArr.filter(item => {
     if (item.type === 'ss' || item === 'ssr') {
       return ssCipher.includes(item.cipher);
@@ -772,8 +632,6 @@ module.exports = async (req, res) => {
 
   // 删除ipv6的节点
   proxiesArr = proxiesArr.filter(proxy => !proxy.server.includes(':'));
-
-
 
   // 没有任何节点
   if (!proxiesArr || (Array.isArray(proxiesArr) && proxiesArr.length === 0)) {
@@ -798,17 +656,6 @@ module.exports = async (req, res) => {
 
   // name 去重
   proxiesArr = ensureUniqueNames(proxiesArr);
-
-  // proxies 重命名
-  // proxiesArr = await updateProxyNames(proxiesArr)
-
-  // 使用反转义函数
-  // proxiesArr = proxiesArr.map(proxy => ({
-  //   ...proxy, // 保留其他属性
-  //   name: unescapeString(proxy.name) // 反转义 name 字段
-  // }));
-
-
 
   if (target === "surge") {
     const supportedProxies = proxiesArr.filter((proxy) =>
