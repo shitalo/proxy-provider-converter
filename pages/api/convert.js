@@ -174,14 +174,21 @@ module.exports = async (req, res) => {
   // 节点cipher校验
   proxiesArr = proxiesArr.filter(item => {
     // 滤掉 type 为 'ss' 且 plugin 为 'v2ray-plugin' 的项
-    if (item.type === 'ss' && item.plugin === 'v2ray-plugin') {
-      return false;
-    }
-    if (item.type === 'ss' || item === 'ssr') {
-      return ssCipher.includes(item.cipher);
+    // if (item.type === 'ss' && item.plugin === 'v2ray-plugin') {
+    //   return false;
+    // }
+    if (item.type === 'ss' || item.type === 'ssr') {
+      const cipher = ssCipher.includes(item.cipher);
+      const plugin = item.plugin === 'v2ray-plugin'
+
+      return cipher && plugin;
     }
     if (item.type === 'vmess') {
-      return vmessCiper.includes(item.cipher);
+      const cipher = vmessCiper.includes(item.cipher);
+      const alterId = !isNaN(item.alterId) && isFinite(item.alterId);
+      // console.log(item, cipher, alterId);
+
+      return cipher && alterId;
     }
     return true;
   });
