@@ -194,7 +194,8 @@ module.exports = async (req, res) => {
     }
 
     // 校验 reality-opts.public-key 参数
-    if (item['reality-opts'] && item['reality-opts']['public-key']) {
+    // if (item['reality-opts'] && item['reality-opts']['public-key']) {
+    if (item?.['reality-opts']?.['public-key']) {
       const pattern = /^[a-zA-Z0-9_-]{43,64}$/;
       const publicKey = item['reality-opts']['public-key'];
       // console.log('public-key参数存在')
