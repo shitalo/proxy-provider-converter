@@ -181,15 +181,29 @@ module.exports = async (req, res) => {
       const cipher = ssCipher.includes(item.cipher);
       const plugin = item.plugin === 'v2ray-plugin'
 
-      return cipher && plugin;
+      const flag = cipher && plugin;
+      if (!flag) return flag;
     }
     if (item.type === 'vmess') {
       const cipher = vmessCiper.includes(item.cipher);
       const alterId = !isNaN(item.alterId) && isFinite(item.alterId);
       // console.log(item, cipher, alterId);
 
-      return cipher && alterId;
+      const flag = cipher && alterId;
+      if (!flag) return flag;
     }
+
+    // 校验 reality-opts.public-key 参数
+    if (item['reality-opts'] && item['reality-opts']['public-key']) {
+      const pattern = /^[a-zA-Z0-9_-]{43,64}$/;
+      const publicKey = item['reality-opts']['public-key'];
+      // console.log('public-key参数存在')
+      // console.log(item)
+      const flag = pattern.test(publicKey);
+      // console.log('public-key校验结果：', flag)
+      if (!flag) return flag;
+    }
+
     return true;
   });
 
